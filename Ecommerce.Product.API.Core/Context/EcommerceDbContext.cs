@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Product.API.Core.Context
 {
-    public class ProductDbContext : DbContext
+    public class EcommerceDbContext : DbContext
     {
-        public ProductDbContext(DbContextOptions<ProductDbContext> options) : base(options)
+        public EcommerceDbContext(DbContextOptions<EcommerceDbContext> options) : base(options)
         {
         }
 

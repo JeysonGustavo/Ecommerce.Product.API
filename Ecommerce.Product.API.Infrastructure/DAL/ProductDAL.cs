@@ -7,9 +7,9 @@ namespace Ecommerce.Product.API.Infrastructure.DAL
 {
     public class ProductDAL : IProductDAL
     {
-        private readonly ProductDbContext _context;
+        private readonly EcommerceDbContext _context;
 
-        public ProductDAL(ProductDbContext context)
+        public ProductDAL(EcommerceDbContext context)
         {
             _context = context;
         }

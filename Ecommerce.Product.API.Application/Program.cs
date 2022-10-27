@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connection = builder.Configuration.GetConnectionString("ProductConn");
-builder.Services.AddDbContext<ProductDbContext>(opt => opt.UseSqlServer(connection));
+var connection = builder.Configuration.GetConnectionString("EcommerceConn");
+builder.Services.AddDbContext<EcommerceDbContext>(opt => opt.UseSqlServer(connection));
 
 
 builder.Services.AddScoped<IProductManager, ProductManager>();

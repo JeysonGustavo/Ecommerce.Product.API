@@ -42,13 +42,24 @@ namespace Ecommerce.Product.API.Application.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateProduct(ProductRequestModel requestModel)
         {
-            var product = _mapper.Map<ProductModel>(requestModel);
+            try
+            {
+                var product = _mapper.Map<ProductModel>(requestModel);
 
-            await _productManager.CreateProduct(product);
+                await _productManager.CreateProduct(product);
 
-            var response = _mapper.Map<ProductResponseModel>(product);
+                var response = _mapper.Map<ProductResponseModel>(product);
 
-            return CreatedAtAction("GetProductById", new { Id = response.Id }, response);
+                return CreatedAtAction("GetProductById", new { Id = response.Id }, response);
+            }
+            catch (ArgumentException ae)
+            {
+                return Ok(ae.Message);
+            }
+            catch (Exception)
+            {
+                return NotFound();
+            }
         }
 
         [HttpPut("{id}")]
@@ -60,14 +71,7 @@ namespace Ecommerce.Product.API.Application.Controllers
 
                 bool response = await _productManager.UpdateProduct(id, product);
 
-                if (response is false)
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    return NoContent();
-                }
+                return Ok(response);
             }
             catch (ArgumentException ae)
             {
@@ -82,14 +86,20 @@ namespace Ecommerce.Product.API.Application.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var response = await _productManager.DeleteProduct(id);
+            try
+            {
+                var response = await _productManager.DeleteProduct(id);
 
-            if (response is false)
+                return Ok(response);
+            }
+            catch (ArgumentException ae)
+            {
+                return Ok(ae.Message);
+            }
+            catch (Exception)
             {
                 return NotFound();
             }
-
-            return NoContent();
         }
     }
 }
