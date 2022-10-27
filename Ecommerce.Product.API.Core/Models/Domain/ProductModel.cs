@@ -14,6 +14,7 @@ namespace Ecommerce.Product.API.Core.Models.Domain
         [Required]
         public string? Description { get; set; }
 
+        [Required]
         public decimal Price { get; set; }
 
         [Required]
