@@ -1,7 +1,11 @@
-﻿namespace Ecommerce.Product.API.Core.EventBus.Publisher
+﻿using Ecommerce.Product.API.Core.Models.Response;
+
+namespace Ecommerce.Product.API.Core.EventBus.Publisher
 {
     public interface IPublisher
     {
-        void PublishProductStock(bool isSuccess);
+        void PublishCreatedOrderDetailStockUpdated(ProductMessageResponseModel productMessage);
+
+        void PublishUpdateOrderDetailStockUpdated(bool isSuccess);
     }
 }

@@ -21,7 +21,7 @@ namespace Ecommerce.Product.API.Core.Listener
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _subscribe.SubscriberNewOrderDetail();
+            _subscribe.InitializeSubscribers();
 
             return Task.CompletedTask;
         }

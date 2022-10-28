@@ -1,4 +1,5 @@
 ﻿using Ecommerce.Product.API.Core.EventBus.Connection;
+using Ecommerce.Product.API.Core.Models.Response;
 using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
@@ -50,13 +51,23 @@ namespace Ecommerce.Product.API.Core.EventBus.Publisher
         }
         #endregion
 
-        #region PublishProductStock
-        public void PublishProductStock(bool isSuccess)
+        #region PublishCreatedOrderDetailStockUpdated
+        public void PublishCreatedOrderDetailStockUpdated(ProductMessageResponseModel productMessage)
+        {
+            var message = JsonSerializer.Serialize(productMessage);
+
+            if (_connectionProvider.GetConnection().IsOpen)
+                SendMessage(message, "product_stock_changed_order_detail_created");
+        }
+        #endregion
+
+        #region PublishUpdateOrderDetailStockUpdated
+        public void PublishUpdateOrderDetailStockUpdated(bool isSuccess)
         {
             var message = JsonSerializer.Serialize(isSuccess);
 
             if (_connectionProvider.GetConnection().IsOpen)
-                SendMessage(message, "product_stock_changed_order_detail_created");
+                SendMessage(message, "product_stock_changed_order_detail_updated");
         }
         #endregion
 

@@ -2,6 +2,6 @@
 {
     public interface ISubscriber
     {
-        void SubscriberNewOrderDetail();
+        void InitializeSubscribers();
     }
 }
