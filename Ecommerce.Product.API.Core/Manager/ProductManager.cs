@@ -5,27 +5,36 @@ namespace Ecommerce.Product.API.Core.Manager
 {
     public class ProductManager : IProductManager
     {
-        private readonly IProductDAL _productDAL;
+        #region Properties
+        private readonly IProductDAL _productDAL; 
+        #endregion
 
-        public ProductManager(IProductDAL productDAL)
+        #region Constructor
+        public ProductManager(IProductDAL productDAL) 
         {
             _productDAL = productDAL;
         }
+        #endregion
 
+        #region GetAllProducts
         public async Task<IEnumerable<ProductModel>> GetAllProducts()
         {
             var products = await _productDAL.GetAllProducts();
 
             return products ?? new List<ProductModel>();
         }
+        #endregion
 
+        #region GetProductById
         public async Task<ProductModel> GetProductById(int id)
         {
             var product = await _productDAL.GetProductById(id);
 
             return product ?? new ProductModel();
         }
+        #endregion
 
+        #region CreateProduct
         public async Task CreateProduct(ProductModel product)
         {
             if (product is null)
@@ -33,7 +42,9 @@ namespace Ecommerce.Product.API.Core.Manager
 
             await _productDAL.CreateProduct(product);
         }
+        #endregion
 
+        #region UpdateProduct
         public async Task<bool> UpdateProduct(int id, ProductModel product)
         {
             if (product is null)
@@ -47,7 +58,9 @@ namespace Ecommerce.Product.API.Core.Manager
 
             return await _productDAL.UpdateProduct(product);
         }
+        #endregion
 
+        #region DeleteProduct
         public async Task<bool> DeleteProduct(int id)
         {
             if (id < 1)
@@ -57,6 +70,7 @@ namespace Ecommerce.Product.API.Core.Manager
                 throw new ArgumentException("Product Not Found");
 
             return await _productDAL.DeleteProduct(id);
-        }
+        } 
+        #endregion
     }
 }

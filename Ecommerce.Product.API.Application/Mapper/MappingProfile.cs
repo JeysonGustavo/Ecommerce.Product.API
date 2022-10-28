@@ -9,8 +9,13 @@ namespace Ecommerce.Product.API.Application.Mapper
     {
         public MappingProfile()
         {
+            #region Request
+            CreateMap<ProductRequestModel, ProductModel>();
+            #endregion
+
+            #region Response
             CreateMap<ProductModel, ProductResponseModel>();
-            CreateMap<ProductRequestModel, ProductModel> ();
+            #endregion
         }
     }
 }

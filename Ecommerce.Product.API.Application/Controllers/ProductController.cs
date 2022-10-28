@@ -11,15 +11,20 @@ namespace Ecommerce.Product.API.Application.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
+        #region Properties
         private readonly IProductManager _productManager;
         private readonly IMapper _mapper;
+        #endregion
 
+        #region Constructor
         public ProductController(IProductManager productManager, IMapper mapper)
         {
             _productManager = productManager;
             _mapper = mapper;
         }
+        #endregion
 
+        #region GetAllProducts
         [HttpGet]
         public async Task<ActionResult> GetAllProducts()
         {
@@ -27,7 +32,9 @@ namespace Ecommerce.Product.API.Application.Controllers
 
             return Ok(_mapper.Map<IEnumerable<ProductResponseModel>>(products));
         }
+        #endregion
 
+        #region GetProductById
         [HttpGet("{id}")]
         public async Task<ActionResult> GetProductById(int id)
         {
@@ -38,7 +45,9 @@ namespace Ecommerce.Product.API.Application.Controllers
 
             return Ok(_mapper.Map<ProductResponseModel>(product));
         }
+        #endregion
 
+        #region CreateProduct
         [HttpPost]
         public async Task<ActionResult> CreateProduct(ProductRequestModel requestModel)
         {
@@ -61,7 +70,9 @@ namespace Ecommerce.Product.API.Application.Controllers
                 return NotFound();
             }
         }
+        #endregion
 
+        #region UpdateProduct
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, ProductRequestModel requestModel)
         {
@@ -82,7 +93,9 @@ namespace Ecommerce.Product.API.Application.Controllers
                 return NotFound();
             }
         }
+        #endregion
 
+        #region DeleteProduct
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
@@ -100,6 +113,7 @@ namespace Ecommerce.Product.API.Application.Controllers
             {
                 return NotFound();
             }
-        }
+        } 
+        #endregion
     }
 }

@@ -5,10 +5,14 @@ namespace Ecommerce.Product.API.Core.Context
 {
     public class EcommerceDbContext : DbContext
     {
+        #region Constructor
         public EcommerceDbContext(DbContextOptions<EcommerceDbContext> options) : base(options)
         {
         }
+        #endregion
 
-        public DbSet<ProductModel> Products { get; set; }
+        #region DbSets
+        public DbSet<ProductModel> Products { get; set; } 
+        #endregion
     }
 }
