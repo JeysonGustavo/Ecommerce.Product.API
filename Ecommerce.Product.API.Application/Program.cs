@@ -1,8 +1,12 @@
+using Confluent.Kafka;
 using Ecommerce.Product.API.Core.Context;
 using Ecommerce.Product.API.Core.EventBus.Connection;
 using Ecommerce.Product.API.Core.EventBus.Publisher;
 using Ecommerce.Product.API.Core.EventBus.Subscriber;
 using Ecommerce.Product.API.Core.Infrastructure;
+using Ecommerce.Product.API.Core.Kafka.Connection;
+using Ecommerce.Product.API.Core.Kafka.Consumer;
+using Ecommerce.Product.API.Core.Kafka.Publisher;
 using Ecommerce.Product.API.Core.Listener;
 using Ecommerce.Product.API.Core.Manager;
 using Ecommerce.Product.API.Infrastructure.DAL;
@@ -35,6 +39,16 @@ builder.Services.AddSingleton<IPublisher, Publisher>(e => new Publisher(e.GetSer
 #region Listeners
 builder.Services.AddHostedService<OrderCreatedListener>();
 #endregion
+
+#region Kafka
+builder.Services.AddSingleton<ProducerConfig>(new ProducerConfig { BootstrapServers = builder.Configuration["KafkaServer"] });
+builder.Services.AddSingleton<ConsumerConfig>(new ConsumerConfig { BootstrapServers = builder.Configuration["KafkaServer"], GroupId = "ecommerce_product_consumer", AutoOffsetReset = AutoOffsetReset.Earliest });
+builder.Services.AddSingleton<IKafkaConnectionProvider, KafkaConnectionProvider>();
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+builder.Services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
+#endregion
+
+
 
 #region AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
