@@ -54,6 +54,9 @@ namespace Ecommerce.Product.API.Core.EventBus.Publisher
         #region PublishCreatedOrderDetailStockUpdated
         public void PublishCreatedOrderDetailStockUpdated(ProductMessageResponseModel productMessage)
         {
+            if (productMessage is null)
+                throw new ArgumentException("Product Message cannot be null");
+
             var message = JsonSerializer.Serialize(productMessage);
 
             if (_connectionProvider.GetConnection().IsOpen)
@@ -62,13 +65,29 @@ namespace Ecommerce.Product.API.Core.EventBus.Publisher
         #endregion
 
         #region PublishUpdateOrderDetailStockUpdated
-        public void PublishUpdateOrderDetailStockUpdated(bool isSuccess)
+        public void PublishUpdateOrderDetailStockUpdated(ProductMessageResponseModel productMessage)
         {
-            var message = JsonSerializer.Serialize(isSuccess);
+            if (productMessage is null)
+                throw new ArgumentException("Product Message cannot be null");
+
+            var message = JsonSerializer.Serialize(productMessage);
 
             if (_connectionProvider.GetConnection().IsOpen)
                 SendMessage(message, "product_stock_changed_order_detail_updated");
         }
+        #endregion
+
+        #region PublishOrderDetailDeletedStockUpdated
+        public void PublishOrderDetailDeletedStockUpdated(ProductMessageResponseModel productMessage)
+        {
+            if (productMessage is null)
+                throw new ArgumentException("Product Message cannot be null");
+
+            var message = JsonSerializer.Serialize(productMessage);
+
+            if (_connectionProvider.GetConnection().IsOpen)
+                SendMessage(message, "product_stock_changed_order_detail_deleted");
+        } 
         #endregion
 
         #region Dispose

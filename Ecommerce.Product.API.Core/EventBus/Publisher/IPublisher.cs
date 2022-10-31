@@ -6,6 +6,8 @@ namespace Ecommerce.Product.API.Core.EventBus.Publisher
     {
         void PublishCreatedOrderDetailStockUpdated(ProductMessageResponseModel productMessage);
 
-        void PublishUpdateOrderDetailStockUpdated(bool isSuccess);
+        void PublishUpdateOrderDetailStockUpdated(ProductMessageResponseModel productMessage);
+
+        void PublishOrderDetailDeletedStockUpdated(ProductMessageResponseModel productMessage);
     }
 }

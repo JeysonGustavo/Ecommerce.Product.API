@@ -47,6 +47,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         {
             SubscriberNewOrderDetail();
             SubscribeUpdateOrderDetailUnits();
+            SubscriberOrderDetailDeleted();
         }
         #endregion
 
@@ -112,9 +113,9 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
                     throw new ArgumentException("Product not found or stock insufficient");
 
                 product.AvailableStock = product.AvailableStock - orderDetail.Units;
+                //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
-                productMessage.IsSuccess = false;
 
                 _publisher.PublishCreatedOrderDetailStockUpdated(productMessage);
             }
@@ -147,37 +148,95 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region UpdateOrderDetailUnitsMessageReceived
         private void UpdateOrderDetailUnitsMessageReceived(object? sender, BasicDeliverEventArgs args)
         {
+            var message = GetMessage(args);
+
+            if (string.IsNullOrEmpty(message))
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var updateOrderDetailUnits = JsonSerializer.Deserialize<OrderDetailUpdateUnitsResponseModel>(message);
+
+            if (updateOrderDetailUnits is null)
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
+
             try
             {
-                var message = GetMessage(args);
-
-                var updateOrderDetailUnits = JsonSerializer.Deserialize<OrderDetailUpdateUnitsResponseModel>(message);
-
-                if (updateOrderDetailUnits is null)
-                    throw new ArgumentException("Could not receive the message from Order service");
-
                 var product = _context.Products.Where(x => x.Id == updateOrderDetailUnits.ProductId).FirstOrDefault();
 
                 if (product is null || product.MaxStockThreshold < updateOrderDetailUnits.NewUnits)
                     throw new ArgumentException("Product not found or stock insufficient");
 
                 product.AvailableStock = product.AvailableStock + updateOrderDetailUnits.OldUnits - updateOrderDetailUnits.NewUnits;
+                //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
-                bool isSuccess = _context.SaveChanges() > 0;
+                productMessage.IsSuccess = _context.SaveChanges() > 0;
 
-                if (isSuccess is true)
-                    _publisher.PublishUpdateOrderDetailStockUpdated(true);
-                else
-                    _publisher.PublishUpdateOrderDetailStockUpdated(false);
+                _publisher.PublishUpdateOrderDetailStockUpdated(productMessage);
             }
             catch (ArgumentException)
             {
-                _publisher.PublishUpdateOrderDetailStockUpdated(false);
+                _publisher.PublishUpdateOrderDetailStockUpdated(productMessage);
                 throw;
             }
             catch (Exception)
             {
-                _publisher.PublishUpdateOrderDetailStockUpdated(false);
+                _publisher.PublishUpdateOrderDetailStockUpdated(productMessage);
+                throw;
+            }
+        }
+        #endregion
+
+        #region SubscriberOrderDetailDeleted
+        private void SubscriberOrderDetailDeleted()
+        {
+            var queueName = _channel.QueueDeclare().QueueName;
+            _channel.QueueBind(queueName, _exchange, "order_detail_deleted");
+
+            var consumer = new EventingBasicConsumer(_channel);
+            consumer.Received += OrderDetailDeletedMessageReceived;
+
+            _channel.BasicConsume(queueName, true, consumer);
+        }
+        #endregion
+
+        #region OrderDetailDeletedMessageReceived
+        private void OrderDetailDeletedMessageReceived(object? sender, BasicDeliverEventArgs args)
+        {
+            var message = GetMessage(args);
+
+            if (string.IsNullOrEmpty(message))
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var orderDetail = JsonSerializer.Deserialize<OrderDetailModel>(message);
+
+            if (orderDetail is null)
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var productMessage = new ProductMessageResponseModel(orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+
+            try
+            {
+                var product = _context.Products.Where(x => x.Id == orderDetail.ProductId).FirstOrDefault();
+
+                if (product is null || product.MaxStockThreshold < orderDetail.Units)
+                    throw new ArgumentException("Product not found or stock insufficient");
+
+                product.AvailableStock = product.AvailableStock + orderDetail.Units;
+                //throw new Exception();
+                _context.Entry(product).State = EntityState.Modified;
+                productMessage.IsSuccess = _context.SaveChanges() > 0;
+
+                _publisher.PublishOrderDetailDeletedStockUpdated(productMessage);
+            }
+            catch (ArgumentException)
+            {
+                _publisher.PublishOrderDetailDeletedStockUpdated(productMessage);
+                throw;
+            }
+            catch (Exception)
+            {
+                _publisher.PublishOrderDetailDeletedStockUpdated(productMessage);
                 throw;
             }
         } 
