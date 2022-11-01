@@ -44,6 +44,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
         }
         #endregion
 
+        #region SubscribeTopics
         private async void SubscribeTopics(List<string> topics)
         {
             await Task.Run(() =>
@@ -84,7 +85,8 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
                     }
                 }
             });
-        }
+        } 
+        #endregion
 
         #region NewOrderDetailMessageReceived
         private async void NewOrderDetailMessageReceived(string message)
@@ -106,7 +108,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
                 product.AvailableStock = product.AvailableStock - orderDetail.Units;
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
-                productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.IsSuccess = await _context.SaveChangesAsync() > 0;
 
                 await _kafkaProducer.PublishCreatedOrderDetailStockUpdated(productMessage);
             }
