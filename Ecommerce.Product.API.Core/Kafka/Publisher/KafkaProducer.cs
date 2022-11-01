@@ -27,6 +27,36 @@ namespace Ecommerce.Product.API.Core.Kafka.Publisher
             var message = JsonSerializer.Serialize(productMessage);
 
             await _kafkaConnectionProvider.GetProducer().ProduceAsync("kafka_product_stock_changed_order_detail_created", new Message<Null, string> { Value = message });
+
+            _kafkaConnectionProvider.GetProducer().Flush();
+        }
+        #endregion
+
+        #region PublishOrderDetailDeletedStockUpdated
+        public async Task PublishUpdateOrderDetailStockUpdated(ProductMessageResponseModel productMessage)
+        {
+            if (productMessage is null)
+                throw new ArgumentException("Product Message cannot be null");
+
+            var message = JsonSerializer.Serialize(productMessage);
+
+            await _kafkaConnectionProvider.GetProducer().ProduceAsync("kafka_product_stock_changed_order_detail_updated", new Message<Null, string> { Value = message });
+
+            _kafkaConnectionProvider.GetProducer().Flush();
+        } 
+        #endregion
+
+        #region PublishOrderDetailDeletedStockUpdated
+        public async Task PublishOrderDetailDeletedStockUpdated(ProductMessageResponseModel productMessage)
+        {
+            if (productMessage is null)
+                throw new ArgumentException("Product Message cannot be null");
+
+            var message = JsonSerializer.Serialize(productMessage);
+
+            await _kafkaConnectionProvider.GetProducer().ProduceAsync("kafka_product_stock_changed_order_detail_deleted", new Message<Null, string> { Value = message });
+
+            _kafkaConnectionProvider.GetProducer().Flush();
         } 
         #endregion
     }

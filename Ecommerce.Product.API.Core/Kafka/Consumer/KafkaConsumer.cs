@@ -1,18 +1,12 @@
-﻿using Confluent.Kafka;
-using Ecommerce.Product.API.Core.Context;
+﻿using Ecommerce.Product.API.Core.Context;
 using Ecommerce.Product.API.Core.Kafka.Connection;
+using Ecommerce.Product.API.Core.Kafka.Publisher;
 using Ecommerce.Product.API.Core.Models.Domain;
+using Ecommerce.Product.API.Core.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client.Events;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace Ecommerce.Product.API.Core.Kafka.Consumer
 {
@@ -20,65 +14,186 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
     {
         #region Properties
         private readonly IKafkaConnectionProvider _kafkaConnectionProvider;
+        private readonly IKafkaProducer _kafkaProducer;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IServiceScope _scope;
         private readonly EcommerceDbContext _context;
-        public CancellationTokenSource _cancellationToken;
+        public CancellationTokenSource _cancellationToken = new();
         #endregion
 
         #region Constructor
-        public KafkaConsumer(IKafkaConnectionProvider kafkaConnectionProvider, IServiceScopeFactory scopeFactory)
+        public KafkaConsumer(IKafkaConnectionProvider kafkaConnectionProvider, IKafkaProducer kafkaProducer, IServiceScopeFactory scopeFactory)
         {
             _kafkaConnectionProvider = kafkaConnectionProvider;
+            _kafkaProducer = kafkaProducer;
+
             _scopeFactory = scopeFactory;
             _scope = _scopeFactory.CreateScope();
             _context = _scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
         }
         #endregion
 
+        #region InitializeConsumers
         public void InitializeConsumers()
         {
-            ConsumerNewOrderDetail();
+            List<string> topics = new List<string>();
+            topics.Add("kafka_new_order_detail_created");
+            topics.Add("kafka_updated_order_detail_units");
+            topics.Add("kafka_order_detail_deleted");
+            SubscribeTopics(topics);
         }
+        #endregion
 
-        #region ConsumerNewOrderDetail
-        private void ConsumerNewOrderDetail()
+        private async void SubscribeTopics(List<string> topics)
         {
-            Task.Run(() => {
-                _cancellationToken = new();
-
-                try
+            await Task.Run(() =>
+            {
+                while (!_cancellationToken.IsCancellationRequested)
                 {
-                    while (!_cancellationToken.IsCancellationRequested)
+                    try
                     {
-                        _kafkaConnectionProvider.GetConsumer().Subscribe("kafka_product_stock_changed_order_detail_created");
+                        _kafkaConnectionProvider.GetConsumer().Subscribe(topics);
+
                         var response = _kafkaConnectionProvider.GetConsumer().Consume(_cancellationToken.Token);
 
                         if (response is not null)
                         {
-                            var orderDetail = JsonSerializer.Deserialize<OrderDetailModel>(response.Message.Value);
+                            switch (response.Topic)
+                            {
+                                case "kafka_new_order_detail_created":
+                                    NewOrderDetailMessageReceived(response.Message.Value);
+                                    break;
 
-                            if (orderDetail is null)
-                                throw new ArgumentException("Could not receive the message from Order service");
+                                case "kafka_updated_order_detail_units":
+                                    UpdateOrderDetailUnitsMessageReceived(response.Message.Value);
+                                    break;
 
-                            var product = _context.Products.Where(x => x.Id == orderDetail.ProductId).FirstOrDefault();
+                                case "kafka_order_detail_deleted":
+                                    OrderDetailDeletedMessageReceived(response.Message.Value);
+                                    break;
 
-                            if (product is null || product.MaxStockThreshold < orderDetail.Units)
-                                throw new ArgumentException("Product not found or stock insufficient");
-
-                            product.AvailableStock = product.AvailableStock - orderDetail.Units;
-                            //throw new Exception();
-                            _context.Entry(product).State = EntityState.Modified;
-                            _context.SaveChanges();
+                                default:
+                                    Console.WriteLine($"--> Missing Topic, name: {response.Topic}");
+                                    break;
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"--> Exception receiving product message, Error: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"--> Kafka Consumer New Order Detail Error: {ex.Message}");
-                }
-
             });
+        }
+
+        #region NewOrderDetailMessageReceived
+        private async void NewOrderDetailMessageReceived(string message)
+        {
+            var orderDetail = JsonSerializer.Deserialize<OrderDetailModel>(message);
+
+            if (orderDetail is null)
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var productMessage = new ProductMessageResponseModel(orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+
+            try
+            {
+                var product = _context.Products.Where(x => x.Id == orderDetail.ProductId).FirstOrDefault();
+
+                if (product is null || product.MaxStockThreshold < orderDetail.Units)
+                    throw new ArgumentException("Product not found or stock insufficient");
+
+                product.AvailableStock = product.AvailableStock - orderDetail.Units;
+                //throw new Exception();
+                _context.Entry(product).State = EntityState.Modified;
+                productMessage.IsSuccess = _context.SaveChanges() > 0;
+
+                await _kafkaProducer.PublishCreatedOrderDetailStockUpdated(productMessage);
+            }
+            catch (ArgumentException aex)
+            {
+                Console.WriteLine($"--> Kafka Consumer New Order Detail Argument Exception: {aex.Message}");
+                await _kafkaProducer.PublishCreatedOrderDetailStockUpdated(productMessage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Kafka Consumer New Order Detail Exception: {ex.Message}");
+                await _kafkaProducer.PublishCreatedOrderDetailStockUpdated(productMessage);
+            }
+        }
+        #endregion
+
+        #region UpdateOrderDetailUnitsMessageReceived
+        private async void UpdateOrderDetailUnitsMessageReceived(string message)
+        {
+            var updateOrderDetailUnits = JsonSerializer.Deserialize<OrderDetailUpdateUnitsResponseModel>(message);
+
+            if (updateOrderDetailUnits is null)
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
+
+            try
+            {
+                var product = _context.Products.Where(x => x.Id == updateOrderDetailUnits.ProductId).FirstOrDefault();
+
+                if (product is null || product.MaxStockThreshold < updateOrderDetailUnits.NewUnits)
+                    throw new ArgumentException("Product not found or stock insufficient");
+
+                product.AvailableStock = product.AvailableStock + updateOrderDetailUnits.OldUnits - updateOrderDetailUnits.NewUnits;
+                //throw new Exception();
+                _context.Entry(product).State = EntityState.Modified;
+                productMessage.IsSuccess = _context.SaveChanges() > 0;
+
+                await _kafkaProducer.PublishUpdateOrderDetailStockUpdated(productMessage);
+            }
+            catch (ArgumentException aex)
+            {
+                Console.WriteLine($"--> Kafka Consumer Update Order Detail Argument Exception: {aex.Message}");
+                await _kafkaProducer.PublishUpdateOrderDetailStockUpdated(productMessage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Kafka Consumer Update Order Detail Exception: {ex.Message}");
+                await _kafkaProducer.PublishUpdateOrderDetailStockUpdated(productMessage);
+            }
+        }
+        #endregion
+
+        #region OrderDetailDeletedMessageReceived
+        private async void OrderDetailDeletedMessageReceived(string message)
+        {
+            var orderDetail = JsonSerializer.Deserialize<OrderDetailModel>(message);
+
+            if (orderDetail is null)
+                throw new ArgumentException("Could not receive the message from Order service");
+
+            var productMessage = new ProductMessageResponseModel(orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+
+            try
+            {
+                var product = _context.Products.Where(x => x.Id == orderDetail.ProductId).FirstOrDefault();
+
+                if (product is null || product.MaxStockThreshold < orderDetail.Units)
+                    throw new ArgumentException("Product not found or stock insufficient");
+
+                product.AvailableStock = product.AvailableStock + orderDetail.Units;
+                //throw new Exception();
+                _context.Entry(product).State = EntityState.Modified;
+                productMessage.IsSuccess = _context.SaveChanges() > 0;
+
+                await _kafkaProducer.PublishOrderDetailDeletedStockUpdated(productMessage);
+            }
+            catch (ArgumentException aex)
+            {
+                Console.WriteLine($"--> Kafka Consumer Delete Order Detail Argument Exception: {aex.Message}");
+                await _kafkaProducer.PublishOrderDetailDeletedStockUpdated(productMessage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Kafka Consumer Delete Order Detail Exception: {ex.Message}");
+                await _kafkaProducer.PublishOrderDetailDeletedStockUpdated(productMessage);
+            }
         }
         #endregion
     }
