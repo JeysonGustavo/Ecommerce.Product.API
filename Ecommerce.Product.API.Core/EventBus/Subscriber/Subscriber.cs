@@ -80,7 +80,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscriberNewOrderDetail
         private void SubscriberNewOrderDetail()
         {
-            var queueName = _channel.QueueDeclare().QueueName;
+            var queueName = _channel.QueueDeclare("new_order_detail_created_queue").QueueName;
             _channel.QueueBind(queueName, _exchange, "new_order_detail_created");
 
             var consumer = new EventingBasicConsumer(_channel);
@@ -135,7 +135,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscribeUpdateOrderDetailUnits
         private void SubscribeUpdateOrderDetailUnits()
         {
-            var queueName = _channel.QueueDeclare().QueueName;
+            var queueName = _channel.QueueDeclare("update_order_detail_units_queue").QueueName;
             _channel.QueueBind(queueName, _exchange, "update_order_detail_units");
 
             var consumer = new EventingBasicConsumer(_channel);
@@ -190,7 +190,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscriberOrderDetailDeleted
         private void SubscriberOrderDetailDeleted()
         {
-            var queueName = _channel.QueueDeclare().QueueName;
+            var queueName = _channel.QueueDeclare("order_detail_deleted_queue").QueueName;
             _channel.QueueBind(queueName, _exchange, "order_detail_deleted");
 
             var consumer = new EventingBasicConsumer(_channel);
