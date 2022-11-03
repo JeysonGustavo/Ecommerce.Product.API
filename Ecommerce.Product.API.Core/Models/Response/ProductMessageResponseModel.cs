@@ -3,6 +3,7 @@
     public class ProductMessageResponseModel
     {
         #region Properties
+        public int Id { get; set; }
         public int OrderId { get; set; }
         public int ProductId { get; set; }
         public int Units { get; set; }
@@ -10,13 +11,14 @@
         #endregion
 
         #region Constructor
-        public ProductMessageResponseModel(int orderId, int productId, int units, bool isSuccess)
+        public ProductMessageResponseModel(int id, int orderId, int productId, int units, bool isSuccess)
         {
+            Id = id;
             OrderId = orderId;
             ProductId = productId;
             Units = units;
             IsSuccess = isSuccess;
-        } 
+        }
         #endregion
     }
 }

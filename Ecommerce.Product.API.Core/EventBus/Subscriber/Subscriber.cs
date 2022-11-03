@@ -103,7 +103,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
 
             try
             {
@@ -158,7 +158,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (updateOrderDetailUnits is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
+            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.Id, updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
 
             try
             {
@@ -213,7 +213,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
 
             try
             {
