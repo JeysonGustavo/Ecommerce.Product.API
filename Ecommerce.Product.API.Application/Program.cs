@@ -31,9 +31,9 @@ builder.Services.AddScoped<IProductDAL, ProductDAL>();
 #endregion
 
 #region RabbitMQ
-builder.Services.AddSingleton<IConnectionProvider>(new ConnectionProvider(builder.Configuration["RabbitMQHost"], int.Parse(builder.Configuration["RabbitMQPort"])));
-builder.Services.AddSingleton<ISubscriber, Subscriber>(e => new Subscriber(e.GetRequiredService<IConnectionProvider>(), e.GetRequiredService<IServiceScopeFactory>(), "order_detail_exchange", ExchangeType.Direct));
-builder.Services.AddSingleton<IPublisher, Publisher>(e => new Publisher(e.GetRequiredService<IConnectionProvider>(), "product_exchange", ExchangeType.Direct));
+//builder.Services.AddSingleton<IConnectionProvider>(new ConnectionProvider(builder.Configuration["RabbitMQHost"], int.Parse(builder.Configuration["RabbitMQPort"])));
+//builder.Services.AddSingleton<ISubscriber, Subscriber>(e => new Subscriber(e.GetRequiredService<IConnectionProvider>(), e.GetRequiredService<IServiceScopeFactory>(), "order_detail_exchange", ExchangeType.Direct));
+//builder.Services.AddSingleton<IPublisher, Publisher>(e => new Publisher(e.GetRequiredService<IConnectionProvider>(), "product_exchange", ExchangeType.Direct));
 #endregion
 
 #region Listeners
