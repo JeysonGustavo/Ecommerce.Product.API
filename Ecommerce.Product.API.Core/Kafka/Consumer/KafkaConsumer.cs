@@ -96,7 +96,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false, "Update product to deduct units or delete this order detail and do not change the AvailableStock on Product table");
 
             try
             {
@@ -109,6 +109,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = await _context.SaveChangesAsync() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 await _kafkaProducer.PublishCreatedOrderDetailStockUpdated(productMessage);
             }
@@ -133,7 +134,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
             if (updateOrderDetailUnits is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.Id, updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
+            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.Id, updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false, "Update product to deduct or add units");
 
             try
             {
@@ -146,6 +147,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 await _kafkaProducer.PublishUpdateOrderDetailStockUpdated(productMessage);
             }
@@ -170,7 +172,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false, "Insert order detail and Update product to deduct units");
 
             try
             {
@@ -183,6 +185,7 @@ namespace Ecommerce.Product.API.Core.Kafka.Consumer
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 await _kafkaProducer.PublishOrderDetailDeletedStockUpdated(productMessage);
             }

@@ -80,7 +80,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscriberNewOrderDetail
         private void SubscriberNewOrderDetail()
         {
-            var queueName = _channel.QueueDeclare("new_order_detail_created_queue").QueueName;
+            var queueName = _channel.QueueDeclare("new_order_detail_created_queue", false, false, false).QueueName;
             _channel.QueueBind(queueName, _exchange, "new_order_detail_created");
 
             var consumer = new EventingBasicConsumer(_channel);
@@ -103,7 +103,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false, "Update product to deduct units or delete this order detail and do not change the AvailableStock on Product table");
 
             try
             {
@@ -116,6 +116,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 _publisher.PublishCreatedOrderDetailStockUpdated(productMessage);
             }
@@ -135,7 +136,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscribeUpdateOrderDetailUnits
         private void SubscribeUpdateOrderDetailUnits()
         {
-            var queueName = _channel.QueueDeclare("update_order_detail_units_queue").QueueName;
+            var queueName = _channel.QueueDeclare("update_order_detail_units_queue", false, false, false).QueueName;
             _channel.QueueBind(queueName, _exchange, "update_order_detail_units");
 
             var consumer = new EventingBasicConsumer(_channel);
@@ -158,7 +159,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (updateOrderDetailUnits is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.Id, updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, updateOrderDetailUnits.OldUnits, false);
+            var productMessage = new ProductMessageResponseModel(updateOrderDetailUnits.Id, updateOrderDetailUnits.OrderId, updateOrderDetailUnits.ProductId, (updateOrderDetailUnits.OldUnits - updateOrderDetailUnits.NewUnits), false, "Update product to deduct or add units");
 
             try
             {
@@ -171,6 +172,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 _publisher.PublishUpdateOrderDetailStockUpdated(productMessage);
             }
@@ -190,7 +192,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
         #region SubscriberOrderDetailDeleted
         private void SubscriberOrderDetailDeleted()
         {
-            var queueName = _channel.QueueDeclare("order_detail_deleted_queue").QueueName;
+            var queueName = _channel.QueueDeclare("order_detail_deleted_queue", false, false, false).QueueName;
             _channel.QueueBind(queueName, _exchange, "order_detail_deleted");
 
             var consumer = new EventingBasicConsumer(_channel);
@@ -213,7 +215,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
             if (orderDetail is null)
                 throw new ArgumentException("Could not receive the message from Order service");
 
-            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false);
+            var productMessage = new ProductMessageResponseModel(orderDetail.Id, orderDetail.OrderId, orderDetail.ProductId, orderDetail.Units, false, "Insert order detail and Update product to deduct units");
 
             try
             {
@@ -226,6 +228,7 @@ namespace Ecommerce.Product.API.Core.EventBus.Subscriber
                 //throw new Exception();
                 _context.Entry(product).State = EntityState.Modified;
                 productMessage.IsSuccess = _context.SaveChanges() > 0;
+                productMessage.DatabaseToDoOperation = productMessage.IsSuccess ? string.Empty : productMessage.DatabaseToDoOperation;
 
                 _publisher.PublishOrderDetailDeletedStockUpdated(productMessage);
             }
